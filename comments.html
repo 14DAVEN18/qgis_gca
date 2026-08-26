@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportar Novedad</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; background: #f5f5f5; }
+        .card { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; }
+        label { display: block; margin-top: 16px; font-weight: 600; font-size: 14px; }
+        input, textarea { width: 100%; margin-top: 6px; padding: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 15px; }
+        button { margin-top: 20px; width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        #mensaje-estado { margin-top: 16px; text-align: center; font-size: 14px; min-height: 20px; }
+        .ok { color: #137333; }
+        .error { color: #d93025; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>Reportes y comentarios</h2>
+    <form id="form-reporte">
+        <label>Kilómetro / Avenida</label>
+        <input type="text" id="kilometro_avenida" name="kilometro_avenida" placeholder=" " required>
+        <label>Novedades</label>
+        <textarea id="novedades" name="novedades" placeholder=" " required></textarea>
+        <label style="display:flex; align-items:center; gap:8px; margin-top:16px; font-weight:600; cursor:pointer;">
+        <input type="checkbox" id="aprobado" name="aprobado" style="width:auto;">
+        Aprobado
+        </label>
+        <button type="submit" id="btn-enviar">Enviar reporte</button>
+    </form>
+    <div id="mensaje-estado"></div>
+</div>
+<script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJMUIEBDBnKI7mzBCcTAwobnw61pnA8LynXY7ZWBNfqcqn6C80PO1V1DBSx9u07oon/exec";
+    const form = document.getElementById('form-reporte');
+    const mensajeEstado = document.getElementById('mensaje-estado');
+    const btnEnviar = document.getElementById('btn-enviar');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        btnEnviar.disabled = true;
+        mensajeEstado.textContent = "Guardando...";
+        try {
+            // CAMBIO CLAVE: URLSearchParams en vez de FormData
+            const data = new URLSearchParams(new FormData(form));
+            await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                body: data
+            });
+            mensajeEstado.textContent = "✅ Enviado.";
+            mensajeEstado.className = "ok";
+            form.reset();
+        } catch (err) {
+            mensajeEstado.textContent = "❌ Error: " + err;
+            mensajeEstado.className = "error";
+        } finally {
+            btnEnviar.disabled = false;
+            btnEnviar.textContent = "Enviar reporte";
+        }
+    });
+</script>
+<!-- Botón Volver al mapa -->
+<a href="./index.html" style="
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 9999;
+    background-color: #27ae60;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: background 0.2s;
+">← Volver al mapa</a>
+</body>
+</html>
