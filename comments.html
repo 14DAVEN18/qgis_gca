@@ -20,6 +20,9 @@
 <div class="card">
     <h2>Reportes y comentarios</h2>
     <form id="form-reporte">
+        <!-- NUEVO CAMPO: Insertar al inicio del form, antes de Kilómetro / Avenida -->
+        <label>Revisado por:</label>
+        <input type="text" id="revisado_por" name="revisado_por" placeholder="Nombre de quien revisa" required>
         <label>Kilómetro / Avenida</label>
         <input type="text" id="kilometro_avenida" name="kilometro_avenida" placeholder=" " required>
         <label>Novedades</label>
@@ -27,6 +30,11 @@
         <label style="display:flex; align-items:center; gap:8px; margin-top:16px; font-weight:600; cursor:pointer;">
         <input type="checkbox" id="aprobado" name="aprobado" style="width:auto;">
         Aprobado
+        </label>
+        <!-- NUEVO CHECKBOX: Insertar inmediatamente después del label de Aprobado -->
+        <label style="display:flex; align-items:center; gap:8px; margin-top:12px; font-weight:600; cursor:pointer;">
+        <input type="checkbox" id="aprobado_general" name="aprobado_general" style="width:auto;">
+        Aprobado General
         </label>
         <button type="submit" id="btn-enviar">Enviar reporte</button>
     </form>
