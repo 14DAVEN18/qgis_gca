@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -122,29 +122,44 @@ function getGoogleLinksHTML(lat, lng) {
 }
 
 function buildPopup(feature, layer, popupFields, fieldAliases, fieldOrder){
-  const props=feature.properties||{};
-  const aliases=fieldAliases||{};
+  const props = feature.properties || {};
+  const aliases = fieldAliases || {};
   let keys;
   if(popupFields && popupFields.length){
     keys = popupFields;
   } else if(fieldOrder && fieldOrder.length){
     keys = fieldOrder.filter(function(k){ return k in props; });
   } else {
-    keys = Object.keys(props).filter(function(k){ return k.charAt(0)!=='_'; });
+    keys = Object.keys(props).filter(function(k){ return k.charAt(0)!== '_'; });
   }
-  let rows='';
+
+  let rows = '';
   keys.forEach(function(k){
-    if(k.charAt(0)==='_') return;
-    const v=props[k];
-    if(v!==null&&v!==undefined){
-      const label=aliases[k]||k;
-      rows+='<tr><td style="padding:2px 10px 2px 0;font-weight:bold;white-space:nowrap">'+escHtml(label)+'</td>'
-           +'<td style="padding:2px 0">'+escHtml(v)+'</td></tr>';
+    if(k.charAt(0) === '_') return;
+    const v = props[k];
+    if(v!== null && v!== undefined && v!== ''){
+      const label = aliases[k] || k;
+      let cellContent = escHtml(v);
+
+      // --- SOLUCIÓN 1: path clickeable con descarga ---
+      if(k === 'path' && typeof v === 'string' && /^https?:\/\//.test(v)){
+        const safeUrl = escHtml(v);
+        cellContent = '<div style="display:flex;align-items:center;gap:6px">'
+          + '<a href="'+safeUrl+'" target="_blank" rel="noopener" class="dl-link" title="Abrir descarga">'
+          + safeUrl + '</a>'
+          + '<a href="'+safeUrl+'" target="_blank" rel="noopener" class="dl-icon" title="Descargar imagen" style="text-decoration:none;font-size:16px">⬇️</a>'
+          + '</div>';
+      }
+
+      rows += '<tr><td style="padding:2px 10px 2px 0;font-weight:bold;white-space:nowrap">'+escHtml(label)+'</td>'
+           + '<td style="padding:2px 0">'+cellContent+'</td></tr>';
     }
   });
+
   if(rows){
     let html = '<table style="border-collapse:collapse;min-width:100px">'+rows+'</table>';
 
+    // --- SOLUCIÓN 2: Google Maps y Street View ---
     let lat = null, lng = null;
     if (props._labelPoint && Array.isArray(props._labelPoint) && isFinite(props._labelPoint[0])) {
       lng = props._labelPoint[0];
@@ -153,13 +168,17 @@ function buildPopup(feature, layer, popupFields, fieldAliases, fieldOrder){
       const center = layer.getBounds().getCenter();
       lat = center.lat;
       lng = center.lng;
+    } else if (layer.getLatLng) {
+      const center = layer.getLatLng();
+      lat = center.lat;
+      lng = center.lng;
     }
 
-    if (lat && lng) {
+    if (lat!== null && lng!== null && isFinite(lat) && isFinite(lng)) {
       html += getGoogleLinksHTML(lat, lng);
     }
 
-    layer.bindPopup(html, {maxWidth:400});
+    layer.bindPopup(html, {maxWidth: 400});
   }
 }
 
