@@ -45,6 +45,14 @@
     const form = document.getElementById('form-reporte');
     const mensajeEstado = document.getElementById('mensaje-estado');
     const btnEnviar = document.getElementById('btn-enviar');
+    (function(){
+      const params = new URLSearchParams(window.location.search);
+      const km = params.get('kilometro_avenida');
+      if(km){
+        const inputKm = document.getElementById('kilometro_avenida');
+        if(inputKm) inputKm.value = km;
+      }
+    })();
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
