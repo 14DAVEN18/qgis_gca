@@ -18,7 +18,7 @@
 </head>
 <body>
 <div class="card">
-    <h2>Reportes y comentarios</h2>
+    <h2>Reportar Novedades</h2>
     <form id="form-reporte">
         <!-- NUEVO CAMPO: Insertar al inicio del form, antes de Kilómetro / Avenida -->
         <label>Revisado por:</label>
@@ -45,6 +45,27 @@
     const form = document.getElementById('form-reporte');
     const mensajeEstado = document.getElementById('mensaje-estado');
     const btnEnviar = document.getElementById('btn-enviar');
+   const chkAprobado = document.getElementById('aprobado');
+const chkAprobadoGeneral = document.getElementById('aprobado_general');
+
+chkAprobado.addEventListener('change', () => {
+  if (chkAprobado.checked) {
+    chkAprobadoGeneral.checked = false;
+    chkAprobadoGeneral.disabled = true;
+  } else {
+    chkAprobadoGeneral.disabled = false;
+  }
+});
+
+chkAprobadoGeneral.addEventListener('change', () => {
+  if (chkAprobadoGeneral.checked) {
+    chkAprobado.checked = false;
+    chkAprobado.disabled = true;
+  } else {
+    chkAprobado.disabled = false;
+  }
+});
+    
     (function(){
       const params = new URLSearchParams(window.location.search);
       const km = params.get('kilometro_avenida');
@@ -67,6 +88,11 @@
             });
             mensajeEstado.textContent = "✅ Enviado.";
             mensajeEstado.className = "ok";
+            // Escribe este bloque justo antes de form.reset(); en comments.html - para resetear disabled al enviar
+
+            // Restaurar estado de checkboxes después de enviar
+            document.getElementById('aprobado').disabled = false;
+            document.getElementById('aprobado_general').disabled = false;
             form.reset();
         } catch (err) {
             mensajeEstado.textContent = "❌ Error: " + err;

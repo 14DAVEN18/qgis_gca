@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editar Novedad</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:500px;margin:40px auto;padding:20px;background:#f5f5f5}
+.card{background:white;padding:24px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+h2{margin-top:0} label{display:block;margin-top:16px;font-weight:600;font-size:14px}
+input,textarea{width:100%;margin-top:6px;padding:10px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box;font-size:15px}
+button{margin-top:20px;width:100%;padding:12px;background:#1a73e8;color:white;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer}
+#mensaje-estado{margin-top:16px;text-align:center;font-size:14px;min-height:20px}.ok{color:#137333}.error{color:#d93025}
+.badge-info{background:#e0f2fe;color:#075985;padding:6px 12px;border-radius:9999px;font-size:12px;display:inline-block;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="card">
+<h2 id="titulo">Editar Novedad</h2>
+<div id="info-fila" class="badge-info" style="display:none"></div>
+<form id="form-reporte">
+<label>Revisado por:</label>
+<input type="text" id="revisado_por" name="revisado_por" placeholder="Nombre de quien revisa" required>
+<label>Kilómetro / Avenida</label>
+<input type="text" id="kilometro_avenida" name="kilometro_avenida" required>
+<label>Novedades</label>
+<textarea id="novedades" name="novedades" rows="5" required></textarea>
+<label style="display:flex;align-items:center;gap:8px;margin-top:16px;font-weight:600;cursor:pointer;">
+<input type="checkbox" id="aprobado" name="aprobado" style="width:auto;"> Aprobado
+</label>
+<label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-weight:600;cursor:pointer;">
+<input type="checkbox" id="aprobado_general" name="aprobado_general" style="width:auto;"> Aprobado General
+</label>
+<button type="submit" id="btn-enviar">Guardar Cambios</button>
+</form>
+<div id="mensaje-estado"></div>
+</div>
+<script>
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJMUIEBDBnKI7mzBCcTAwobnw61pnA8LynXY7ZWBNfqcqn6C80PO1V1DBSx9u07oon/exec";
+const form=document.getElementById('form-reporte');
+const mensajeEstado=document.getElementById('mensaje-estado');
+const btnEnviar=document.getElementById('btn-enviar');
+const chkAprobado=document.getElementById('aprobado');
+const chkAprobadoGeneral=document.getElementById('aprobado_general');
+
+chkAprobado.addEventListener('change',()=>{
+  if(chkAprobado.checked){chkAprobadoGeneral.checked=false;chkAprobadoGeneral.disabled=true;}
+  else{chkAprobadoGeneral.disabled=false;}
+});
+chkAprobadoGeneral.addEventListener('change',()=>{
+  if(chkAprobadoGeneral.checked){chkAprobado.checked=false;chkAprobado.disabled=true;}
+  else{chkAprobado.disabled=false;}
+});
+
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const row=params.get('row');
+  const revisado=params.get('revisado_por');
+  const km=params.get('kilometro_avenida');
+  const nov=params.get('novedades');
+  if(revisado) document.getElementById('revisado_por').value=revisado;
+  if(km) document.getElementById('kilometro_avenida').value=km;
+  if(nov) document.getElementById('novedades').value=nov;
+  if(row){
+    document.getElementById('info-fila').style.display='inline-block';
+    document.getElementById('info-fila').textContent='Editando fila '+row;
+    document.getElementById('titulo').textContent='Editar Novedad - Fila '+row;
+    let inputRow=form.querySelector('input[name="row"]');
+    if(!inputRow){inputRow=document.createElement('input');inputRow.type='hidden';inputRow.name='row';form.appendChild(inputRow);}
+    inputRow.value=row;
+    let inputAction=form.querySelector('input[name="action"]');
+    if(!inputAction){inputAction=document.createElement('input');inputAction.type='hidden';inputAction.name='action';form.appendChild(inputAction);}
+    inputAction.value='edit';
+  }
+})();
+
+form.addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  btnEnviar.disabled=true;
+  mensajeEstado.textContent="Guardando cambios...";
+  try{
+    const data=new URLSearchParams(new FormData(form));
+    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:data});
+    const json=await res.json().catch(()=>({ok:true}));
+    if(json.error) throw new Error(json.error);
+    mensajeEstado.textContent="✅ Cambios guardados.";
+    mensajeEstado.className="ok";
+    setTimeout(()=>{window.location.href="./view_comments.html";},1200);
+  }catch(err){
+    mensajeEstado.textContent="❌ Error: "+err;
+    mensajeEstado.className="error";
+  }finally{
+    btnEnviar.disabled=false;
+    document.getElementById('aprobado').disabled=false;
+    document.getElementById('aprobado_general').disabled=false;
+  }
+});
+</script>
+<a href="./view_comments.html" style="position:fixed;top:20px;left:20px;z-index:9999;background:#2c3e50;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold;box-shadow:0 4px 10px rgba(0,0,0,.3)">← Volver a Comentarios</a>
+</body>
+</html>
