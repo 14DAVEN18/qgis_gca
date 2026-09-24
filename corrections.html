@@ -13,8 +13,6 @@ tr:hover td{background:#f1f5f9}
 .badge{padding:2px 8px;border-radius:9999px;font-size:12px}
 .badge-si{background:#b7e1cd}
 .badge-no{background:#fff2cc}
-.badge-corr-si{background:#b7e1cd; color:#0f5132; font-weight:600}
-.badge-corr-no{background:#f4cccc; color:#cc0000; font-weight:700}
 #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;padding:20px}
 #modal-overlay.active{display:flex}
 #modal{background:white;border-radius:12px;max-width:500px;width:100%;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
@@ -29,9 +27,11 @@ tr:hover td{background:#f1f5f9}
 <body>
 <div class="card">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-<a href="./index.html" style="background:#2c3e50;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-weight:600">← Volver al mapa</a>
+<span style="font-weight:700; font-size:14px; color:#2c3e50">Ver Correcciones</span>
+<div style="display:flex; gap:8px">
 <button id="btn-recargar" style="padding:8px 16px;border-radius:8px;border:1px solid #ccc;background:white;cursor:pointer">Recargar</button>
 <button id="btn-descargar" style="padding:8px 16px;border-radius:8px;border:1px solid #ccc;background:white;cursor:pointer" onclick="descargarExcel()">Descargar</button>
+</div>
 </div>
 <div id="estado" style="font-size:13px;color:#666;margin-bottom:10px">Cargando...</div>
 <table id="tabla">
@@ -51,12 +51,14 @@ tr:hover td{background:#f1f5f9}
 <p><strong>Aprobado:</strong> <span id="modal-aprob"></span></p>
 <p><strong>Corregido:</strong> <span id="modal-corr"></span></p>
 <p><strong>Fila:</strong> <span id="modal-row"></span></p>
-<div class="modal-actions">
-<button id="btn-cerrar">Cerrar</button>
-<button id="btn-editar">Editar</button>
+<div class="modal-actions" style="flex-direction:column">
+<button id="btn-toggle-corr" style="background:#1a73e8; color:white">Marcar como corregido</button>
+<button id="btn-cerrar" style="background:#e5e7eb; color:#111">Cerrar</button>
+</div>
+<div id="toggle-estado" style="font-size:12px; text-align:center; margin-top:10px; min-height:16px"></div>
 </div>
 </div>
-</div>
+
 
 <script>
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJMUIEBDBnKI7mzBCcTAwobnw61pnA8LynXY7ZWBNfqcqn6C80PO1V1DBSx9u07oon/exec";
@@ -91,11 +93,8 @@ async function cargar(){
       tr.dataset.aprob = item.aprobado||"";
       tr.dataset.corr = item.corregido||"";
       tr.dataset.fecha = item.fecha||"";
- const corrRaw = (item.corregido || "NO").toString().trim().toUpperCase();
-      const corrEsSi = corrRaw === "SI";
-      const corrBadgeClass = corrEsSi ? "badge-corr-si" : "badge-corr-no";
-      const corrLabel = corrEsSi ? "SI" : "NO";
-      tr.innerHTML = `<td>${formatearFecha(item.fecha)}</td><td>${item.revisado_por||""}</td><td>${item.kilometro_avenida||""}</td><td>${(item.novedades||"").substring(0,80)}</td><td><span class="badge ${String(item.aprobado).toUpperCase()==="SI"?"badge-si":"badge-no"}">${item.aprobado||""}</span></td><td><span class="badge ${corrBadgeClass}">${corrLabel}</span></td>`;      tr.addEventListener('click',()=>abrirPopup(tr.dataset));
+      tr.innerHTML = `<td>${formatearFecha(item.fecha)}</td><td>${item.revisado_por||""}</td><td>${item.kilometro_avenida||""}</td><td>${(item.novedades||"").substring(0,80)}</td><td><span class="badge ${String(item.aprobado).toUpperCase()==="SI"?"badge-si":"badge-no"}">${item.aprobado||""}</span></td><td>${item.corregido||""}</td>`;
+      tr.addEventListener('click',()=>abrirPopup(tr.dataset));
       tbody.appendChild(tr);
     });
     estado.textContent = `${data.length} registros`;
@@ -111,8 +110,21 @@ function abrirPopup(d){
   document.getElementById('modal-km').textContent = d.km;
   document.getElementById('modal-nov').textContent = d.nov;
   document.getElementById('modal-aprob').textContent = d.aprob;
-  document.getElementById('modal-corr').textContent = d.corr;
+  const esSi = (d.corr || "NO").toString().trim().toUpperCase() === "SI";
+  document.getElementById('modal-corr').textContent = esSi ? "SI" : "NO";
+  document.getElementById('modal-corr').style.color = esSi ? "#0f5132" : "#cc0000";
+  document.getElementById('modal-corr').style.fontWeight = "700";
   document.getElementById('modal-row').textContent = d.row;
+  
+  const btnToggle = document.getElementById('btn-toggle-corr');
+  if(esSi){
+    btnToggle.textContent = "Desmarcar corregido";
+    btnToggle.style.background = "#e74c3c";
+  } else {
+    btnToggle.textContent = "Marcar como corregido";
+    btnToggle.style.background = "#27ae60";
+  }
+  document.getElementById('toggle-estado').textContent = "";
   overlay.classList.add('active');
 }
 
@@ -121,18 +133,58 @@ function cerrarPopup(){
   seleccionado = null;
 }
 
-document.getElementById('btn-cerrar').addEventListener('click', cerrarPopup);
-overlay.addEventListener('click', (e)=>{ if(e.target===overlay) cerrarPopup(); });
-document.getElementById('btn-editar').addEventListener('click', ()=>{
+async function toggleCorregido(){
   if(!seleccionado) return;
-  const params = new URLSearchParams({
-    row: seleccionado.row,
-    revisado_por: seleccionado.revisado,
-    kilometro_avenida: seleccionado.km,
-    novedades: seleccionado.nov
-  });
-  window.location.href = "./edits.html?"+params.toString();
-});
+  const btn = document.getElementById('btn-toggle-corr');
+  const estado = document.getElementById('toggle-estado');
+  btn.disabled = true;
+  estado.textContent = "Actualizando...";
+  try{
+    const data = new URLSearchParams({
+      action: "toggle_corregido",
+      row: seleccionado.row
+    });
+    const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: data });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || "Error");
+    
+    // Actualizar dataset local y tabla sin recargar todo
+    const nuevoValor = json.nuevoValor;
+    seleccionado.corr = nuevoValor;
+    // Buscar tr en tabla y actualizar badge
+    const tr = document.querySelector(`tr[data-row="${seleccionado.row}"]`);
+    if(tr){
+      tr.dataset.corr = nuevoValor;
+      const tdCorr = tr.querySelector('td:last-child');
+      if(tdCorr){
+        const esSi = nuevoValor === "SI";
+        tdCorr.innerHTML = `<span class="badge ${esSi ? 'badge-corr-si' : 'badge-corr-no'}">${nuevoValor}</span>`;
+      }
+    }
+    // Actualizar modal
+    const esSiAhora = nuevoValor === "SI";
+    document.getElementById('modal-corr').textContent = nuevoValor;
+    document.getElementById('modal-corr').style.color = esSiAhora ? "#0f5132" : "#cc0000";
+    if(esSiAhora){
+      btn.textContent = "Desmarcar corregido";
+      btn.style.background = "#e74c3c";
+    } else {
+      btn.textContent = "Marcar como corregido";
+      btn.style.background = "#27ae60";
+    }
+    estado.textContent = `✅ Cambiado a ${nuevoValor} - Visible en view_comments.html al recargar`;
+    estado.style.color = esSiAhora ? "#0f5132" : "#cc0000";
+  }catch(err){
+    estado.textContent = "❌ Error: " + err.message;
+    estado.style.color = "#cc0000";
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('btn-cerrar').addEventListener('click', cerrarPopup);
+document.getElementById('btn-toggle-corr').addEventListener('click', toggleCorregido);
+overlay.addEventListener('click', (e)=>{ if(e.target===overlay) cerrarPopup(); });
 document.getElementById('btn-recargar').addEventListener('click', cargar);
 cargar();
 function descargarExcel() {
